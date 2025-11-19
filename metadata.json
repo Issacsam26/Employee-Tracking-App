@@ -1,0 +1,5 @@
+{
+  "name": "Employee Tracking app",
+  "description": "A multi-tenant admin dashboard for the WiFi-based Employee Presence Detection system. Features store registry management, live presence monitoring, dwell analytics, and AI-powered staffing insights.",
+  "requestFramePermissions": []
+}
