@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, ArrowRight, Lock, User, Briefcase, Building, AlertCircle, Hash } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Lock, User, Briefcase, Building, AlertCircle, Hash, X, Mail, CheckCircle2 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (role: 'ADMIN' | 'EMPLOYEE') => void;
@@ -25,6 +25,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Password Reset State
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
   const handlePinChange = (value: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
     // Only allow numbers and max 6 digits
@@ -73,12 +78,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }, 1000);
   };
 
+  const handleResetSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      setResetStatus('sending');
+      
+      // Simulate API call
+      setTimeout(() => {
+          if (resetEmail.includes('@')) {
+              setResetStatus('success');
+          } else {
+              setResetStatus('error');
+          }
+      }, 1500);
+  };
+
   const toggleSignup = () => {
       setIsSignup(!isSignup);
       setError('');
       setPassword('');
       setEmpPin('');
       setConfirmPin('');
+  };
+
+  const openForgotPassword = () => {
+      setResetEmail(email); // Pre-fill with current email input
+      setResetStatus('idle');
+      setShowForgotPassword(true);
   };
 
   return (
@@ -183,7 +208,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
                 
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1.5 text-left uppercase tracking-wide">Password</label>
+                    <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-xs font-medium text-slate-400 text-left uppercase tracking-wide">Password</label>
+                        {!isSignup && (
+                            <button 
+                                type="button" 
+                                onClick={openForgotPassword}
+                                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                                Forgot Password?
+                            </button>
+                        )}
+                    </div>
                     <div className="relative">
                     <input 
                         type="password" 
@@ -303,6 +339,74 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         &copy; 2023 Employee Tracking System. All rights reserved.<br/>
         Restricted Access. Authorized Personnel Only.
       </p>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-slate-900 w-full max-w-sm p-6 rounded-xl border border-slate-800 shadow-2xl relative animate-in zoom-in-95 duration-200">
+                <button 
+                    onClick={() => setShowForgotPassword(false)}
+                    className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <div className="mb-6">
+                    <div className="w-12 h-12 bg-blue-900/20 rounded-full flex items-center justify-center mb-4 border border-blue-800/30">
+                        <Lock className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Reset Password</h3>
+                    <p className="text-sm text-slate-400">
+                        Enter your administrator email address and we'll send you a link to reset your password.
+                    </p>
+                </div>
+
+                {resetStatus === 'success' ? (
+                     <div className="bg-emerald-900/20 border border-emerald-900/50 rounded-lg p-4 text-center">
+                        <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                        <p className="text-emerald-400 font-medium text-sm">Check your email!</p>
+                        <p className="text-xs text-slate-400 mt-1">We've sent a password reset link to <br/> <span className="text-white">{resetEmail}</span></p>
+                        <button 
+                            onClick={() => setShowForgotPassword(false)}
+                            className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded border border-slate-700 transition-colors"
+                        >
+                            Back to Login
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleResetSubmit}>
+                        <div className="mb-4">
+                            <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Email Address</label>
+                            <div className="relative">
+                                <input 
+                                    type="email" 
+                                    required
+                                    value={resetEmail}
+                                    onChange={(e) => {
+                                        setResetEmail(e.target.value);
+                                        if(resetStatus === 'error') setResetStatus('idle');
+                                    }}
+                                    className={`w-full bg-slate-950 border ${resetStatus === 'error' ? 'border-rose-500' : 'border-slate-700'} text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-600 text-sm`}
+                                    placeholder="admin@company.com"
+                                />
+                                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                            </div>
+                            {resetStatus === 'error' && <p className="text-xs text-rose-400 mt-1.5">Please enter a valid email address.</p>}
+                        </div>
+                        <button 
+                            type="submit"
+                            disabled={resetStatus === 'sending'}
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 disabled:opacity-70"
+                        >
+                            {resetStatus === 'sending' ? (
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : 'Send Reset Link'}
+                        </button>
+                    </form>
+                )}
+            </div>
+        </div>
+      )}
     </div>
   );
 };

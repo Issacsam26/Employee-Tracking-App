@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Employee, PresenceEvent, Session, Store } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Users, Building, Clock, Sparkles, Download, Activity, Wifi, MapPin } from 'lucide-react';
-import { generateStaffingInsight } from '../services/geminiService';
+import { Users, Building, Clock, Download, Activity } from 'lucide-react';
 import LiveFeed from '../components/LiveFeed';
 import FloorMap from '../components/FloorMap';
 
@@ -15,9 +14,6 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ stores, employees, events, sessions }) => {
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
-
   // Calculate Stats
   const activeSessions = sessions.filter(s => !s.exitTime).length;
   const avgDwellTime = sessions.length > 0 
@@ -32,13 +28,6 @@ const Dashboard: React.FC<DashboardProps> = ({ stores, employees, events, sessio
     { name: '16:00', visitors: 9 },
     { name: '18:00', visitors: 4 },
   ];
-
-  const handleGenerateInsight = async () => {
-    setIsLoadingAi(true);
-    const insight = await generateStaffingInsight(sessions, events, stores);
-    setAiInsight(insight);
-    setIsLoadingAi(false);
-  };
 
   const downloadReport = () => {
     // Helper to escape commas for CSV
@@ -242,38 +231,6 @@ const Dashboard: React.FC<DashboardProps> = ({ stores, employees, events, sessio
                      </tbody>
                  </table>
              </div>
-        </div>
-
-        {/* AI Insights Section */}
-        <div className="bg-gradient-to-r from-indigo-950/50 to-slate-900 p-6 rounded-lg border border-indigo-900/30 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Sparkles className="w-24 h-24" />
-          </div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="flex items-center gap-2">
-              <div className="bg-indigo-500/20 p-1.5 rounded">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
-              </div>
-              <h3 className="text-sm font-bold text-indigo-100 uppercase tracking-wider">Staffing Intelligence</h3>
-            </div>
-            <button 
-              onClick={handleGenerateInsight}
-              disabled={isLoadingAi}
-              className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 px-4 py-2 rounded transition-colors disabled:opacity-50 shadow-lg shadow-indigo-900/20 font-medium"
-            >
-              {isLoadingAi ? 'Analyzing Data...' : 'Run AI Analysis'}
-            </button>
-          </div>
-          
-          {aiInsight ? (
-            <div className="prose prose-sm prose-invert max-w-none relative z-10 text-slate-300 leading-relaxed bg-indigo-950/30 p-4 rounded border border-indigo-900/30">
-              <div className="whitespace-pre-line">{aiInsight}</div>
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm relative z-10 max-w-xl">
-              Generate insights to analyze staffing efficiency, dwell times, and signal quality issues based on the latest RSSI data collected from your stores.
-            </p>
-          )}
         </div>
       </div>
 
