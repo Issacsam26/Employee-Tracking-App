@@ -28,20 +28,15 @@ const FloorMap: React.FC<FloorMapProps> = ({ store, activeSessions, employees })
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-slate-950 rounded-lg border border-slate-800 overflow-hidden relative p-4 min-h-[300px]">
-        {/* Map Container with dynamic scaling */}
-        {/* 
-            We use auto width/height with max-100% and aspect-ratio to ensure the container 
-            fits within the parent while maintaining the correct proportions.
-        */}
+      <div className="flex-1 flex items-center justify-center bg-slate-950 rounded-lg border border-slate-800 overflow-hidden relative p-4 w-full h-full min-h-[300px]">
         <div 
             className="relative shadow-2xl rounded-lg overflow-hidden bg-slate-900 transition-all duration-300"
             style={{ 
                 aspectRatio: store.floorPlanAspectRatio || 1.5,
-                height: 'auto',
                 width: 'auto',
-                maxHeight: '100%',
+                height: 'auto',
                 maxWidth: '100%',
+                maxHeight: '100%',
             }}
         >
             {store.floorPlanUrl ? (

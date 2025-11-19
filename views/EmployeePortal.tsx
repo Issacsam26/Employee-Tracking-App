@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, Shift, Session } from '../types';
-import { LogOut, MapPin, Clock, Wifi, Calendar, Plus, Play, Square } from 'lucide-react';
+import { UserProfile, Shift, Session, Store, Employee } from '../types';
+import { LogOut, MapPin, Clock, Wifi, Calendar, Plus, Play, Square, AlertTriangle, Signal } from 'lucide-react';
 import { MOCK_SHIFTS } from '../services/mockData';
 
 interface EmployeePortalProps {
   user: UserProfile;
+  stores: Store[];
+  employee?: Employee;
   onLogout: () => void;
 }
 
-const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
+const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee, onLogout }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>(MOCK_SHIFTS.filter(s => s.employeeId === user.id));
   
@@ -17,6 +19,10 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [attendanceHistory, setAttendanceHistory] = useState<Session[]>([]);
   const [sessionDuration, setSessionDuration] = useState<string>('00:00');
+  const [error, setError] = useState<string | null>(null);
+
+  // Simulation State
+  const [simulatedSSID, setSimulatedSSID] = useState<string>('');
 
   // Shift Management State
   const [isAddingShift, setIsAddingShift] = useState(false);
@@ -25,6 +31,9 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
       startTime: '09:00',
       endTime: '17:00'
   });
+
+  // Collect all unique SSIDs for simulation dropdown
+  const allStoreSSIDs = Array.from(new Set(stores.flatMap(s => s.ssids)));
 
   // Update clock and duration timer
   useEffect(() => {
@@ -43,11 +52,47 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
     return () => clearInterval(timer);
   }, [currentSession]);
 
+  // Clear error on network change
+  useEffect(() => {
+      if (error) setError(null);
+  }, [simulatedSSID]);
+
+  // Auto-connect simulation: Connect to first authorized store SSID if available
+  useEffect(() => {
+    if (!simulatedSSID && !currentSession && employee) {
+        const assignedStoreIds = employee.assignedStoreIds || [];
+        const myStores = stores.filter(s => assignedStoreIds.includes(s.id));
+        
+        // Find the first matching SSID from the assigned stores to simulate auto-connection
+        // This mimics the behavior of a phone auto-connecting to a known, authorized network
+        const targetSSID = myStores.flatMap(s => s.ssids)[0];
+        
+        if (targetSSID) {
+            setSimulatedSSID(targetSSID);
+        }
+    }
+  }, [employee, stores]);
+
   const handleClockIn = () => {
+      setError(null);
+
+      // 1. Identify assigned stores
+      const assignedStoreIds = employee?.assignedStoreIds || [];
+      const myStores = stores.filter(s => assignedStoreIds.includes(s.id));
+
+      // 2. Validate Connection
+      // User must be connected to an SSID belonging to one of their assigned stores
+      const authorizedStore = myStores.find(s => s.ssids.includes(simulatedSSID));
+
+      if (!authorizedStore) {
+          setError("Access Denied: You are not connected to an assigned store Wi-Fi network.");
+          return;
+      }
+
       const newSession: Session = {
           id: `sess-${Date.now()}`,
           employeeId: user.id,
-          storeId: 'store-001', // Mocking location detection
+          storeId: authorizedStore.id, // Use the matched store
           entryTime: new Date().toISOString(),
           dwellMinutes: 0
       };
@@ -87,6 +132,8 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
           setIsAddingShift(false);
       }
   };
+
+  const getStoreName = (id?: string) => stores.find(s => s.id === id)?.name || 'Unknown Location';
   
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-6">
@@ -110,6 +157,45 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
                 <LogOut className="w-5 h-5" />
             </button>
         </div>
+
+        {/* Network Simulator (For Demo/Testing Purposes) */}
+        <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-800 rounded-full text-slate-400">
+                    <Signal className="w-4 h-4" />
+                </div>
+                <div>
+                    <p className="text-xs font-bold text-slate-300 uppercase">Network Simulator</p>
+                    <p className="text-[10px] text-slate-500">Simulate device Wi-Fi connection</p>
+                </div>
+            </div>
+            <select 
+                value={simulatedSSID}
+                onChange={(e) => setSimulatedSSID(e.target.value)}
+                disabled={!!currentSession}
+                className="bg-slate-950 border border-slate-700 text-white text-xs rounded px-3 py-2 outline-none focus:border-blue-500 min-w-[200px]"
+            >
+                <option value="">-- Not Connected --</option>
+                <option value="Starbucks_Free_WiFi">Starbucks_Free_WiFi</option>
+                <option value="Home_Network_5G">Home_Network_5G</option>
+                <optgroup label="Authorized Store Networks">
+                    {allStoreSSIDs.map(ssid => (
+                        <option key={ssid} value={ssid}>{ssid}</option>
+                    ))}
+                </optgroup>
+            </select>
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+            <div className="bg-rose-900/20 border border-rose-900/50 p-4 rounded-lg flex items-start gap-3 animate-in slide-in-from-top-2">
+                <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                <div>
+                    <p className="text-sm font-bold text-rose-400">Clock In Failed</p>
+                    <p className="text-xs text-rose-300 mt-1">{error}</p>
+                </div>
+            </div>
+        )}
 
         {/* Clock In/Out Status Card */}
         <div className={`rounded-2xl p-8 shadow-lg relative overflow-hidden transition-all duration-500 ${currentSession ? 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-900/40' : 'bg-slate-900 border border-slate-800'}`}>
@@ -147,7 +233,7 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
                             <MapPin className="w-5 h-5 text-emerald-300" />
                             <div>
                                 <p className="text-xs text-emerald-200 font-bold uppercase">Location Detected</p>
-                                <span className="font-medium text-sm">Downtown Flagship Store</span>
+                                <span className="font-medium text-sm">{getStoreName(currentSession.storeId)}</span>
                             </div>
                         </div>
                         <button 
@@ -161,10 +247,10 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, onLogout }) => {
                 ) : (
                     <div className="space-y-6">
                          <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/50">
-                            <p className="text-xs text-slate-500 mb-1">Detected Location</p>
+                            <p className="text-xs text-slate-500 mb-1">Detected SSID</p>
                             <div className="flex items-center gap-2 text-slate-300">
-                                <MapPin className="w-4 h-4" />
-                                <span className="text-sm">Downtown Flagship Store</span>
+                                <Wifi className="w-4 h-4" />
+                                <span className="text-sm">{simulatedSSID || 'Not Connected'}</span>
                             </div>
                         </div>
                         <button 

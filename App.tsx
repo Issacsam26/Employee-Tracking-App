@@ -94,7 +94,15 @@ const App: React.FC = () => {
 
   // If user is an Employee, show only Employee Portal
   if (user && user.role !== 'Super Administrator') {
-      return <EmployeePortal user={user} onLogout={handleLogout} />;
+      const currentEmployee = employees.find(e => e.id === user.id);
+      return (
+        <EmployeePortal 
+          user={user} 
+          onLogout={handleLogout} 
+          stores={stores}
+          employee={currentEmployee}
+        />
+      );
   }
 
   // Navigation Item Component
@@ -224,8 +232,8 @@ const App: React.FC = () => {
           )}
 
           {currentView === 'EMPLOYEES' && (
-            <div className="bg-slate-900 rounded-lg shadow-sm border border-slate-800 overflow-hidden animate-in fade-in duration-300">
-              <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+            <div className="bg-slate-900 rounded-lg shadow-sm border border-slate-800 overflow-hidden animate-in fade-in duration-300 flex flex-col">
+              <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900">
                   <div className="text-left">
                      <h3 className="text-sm font-bold text-white uppercase tracking-wider">Staff Directory</h3>
                      <p className="text-xs text-slate-500">Manage active assignments and personnel</p>
@@ -234,55 +242,57 @@ const App: React.FC = () => {
                       Export List
                   </button>
               </div>
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-950/50 border-b border-slate-800">
-                  <tr>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Employee</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Role</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Assignments</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {employees.map(emp => (
-                    <tr key={emp.id} className="hover:bg-slate-800/50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <img src={emp.avatarUrl} alt={emp.name} className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 group-hover:border-blue-500 transition-colors" />
-                          <div>
-                            <p className="text-sm font-medium text-white">{emp.name}</p>
-                            <p className="text-xs text-slate-500">{emp.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 text-[10px] font-bold bg-blue-900/20 text-blue-400 border border-blue-800/30 rounded uppercase">
-                          {emp.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-slate-400">
-                        {emp.assignedStoreIds.length} Stores
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                          Active
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                          <button 
-                             onClick={() => handleDeleteEmployee(emp.id)}
-                             className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-950/20 rounded transition-all"
-                             title="Delete Employee"
-                          >
-                              <Trash2 className="w-4 h-4" />
-                          </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead className="bg-slate-950/50 border-b border-slate-800">
+                    <tr>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Employee</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Role</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Assignments</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-left">Status</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {employees.map(emp => (
+                      <tr key={emp.id} className="hover:bg-slate-800/50 transition-colors group">
+                        <td className="px-6 py-4 align-middle">
+                          <div className="flex items-center gap-3">
+                            <img src={emp.avatarUrl} alt={emp.name} className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 group-hover:border-blue-500 transition-colors" />
+                            <div>
+                              <p className="text-sm font-medium text-white">{emp.name}</p>
+                              <p className="text-xs text-slate-500">{emp.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 align-middle">
+                          <span className="px-2 py-1 text-[10px] font-bold bg-blue-900/20 text-blue-400 border border-blue-800/30 rounded uppercase">
+                            {emp.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-400 align-middle">
+                          {emp.assignedStoreIds.length} Stores
+                        </td>
+                        <td className="px-6 py-4 align-middle">
+                          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                            Active
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right align-middle">
+                            <button 
+                               onClick={() => handleDeleteEmployee(emp.id)}
+                               className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-950/20 rounded transition-all"
+                               title="Delete Employee"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
