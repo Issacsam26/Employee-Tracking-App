@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store, Employee, PresenceEvent, Session, Role, EventType, UserProfile } from './types';
 import { MOCK_STORES, MOCK_EMPLOYEES, generateMockEvents, MOCK_SESSIONS, MOCK_ADMIN, MOCK_EMPLOYEE_USER } from './services/mockData';
-import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2, Search } from 'lucide-react';
 
 // Views
 import Dashboard from './views/Dashboard';
@@ -27,6 +27,9 @@ const App: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>(MOCK_EMPLOYEES);
   const [events, setEvents] = useState<PresenceEvent[]>([]);
   const [sessions] = useState<Session[]>(MOCK_SESSIONS);
+
+  // UI State
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   // Simulate live data fetching
   useEffect(() => {
@@ -87,6 +90,12 @@ const App: React.FC = () => {
           setEmployees(employees.filter(e => e.id !== id));
       }
   };
+
+  const filteredEmployees = employees.filter(emp => 
+      emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) || 
+      emp.email.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+      emp.role.toLowerCase().includes(employeeSearch.toLowerCase())
+  );
 
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
@@ -233,14 +242,28 @@ const App: React.FC = () => {
 
           {currentView === 'EMPLOYEES' && (
             <div className="bg-slate-900 rounded-lg shadow-sm border border-slate-800 overflow-hidden animate-in fade-in duration-300 flex flex-col">
-              <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+              <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900">
                   <div className="text-left">
                      <h3 className="text-sm font-bold text-white uppercase tracking-wider">Staff Directory</h3>
-                     <p className="text-xs text-slate-500">Manage active assignments and personnel</p>
+                     <p className="text-xs text-slate-500">
+                       {filteredEmployees.length} {filteredEmployees.length === 1 ? 'Active Member' : 'Active Personnel'}
+                     </p>
                   </div>
-                  <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium shadow-lg shadow-blue-900/20 transition-colors">
-                      Export List
-                  </button>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="relative flex-1 sm:flex-initial">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input 
+                          type="text" 
+                          placeholder="Search staff..." 
+                          value={employeeSearch}
+                          onChange={(e) => setEmployeeSearch(e.target.value)}
+                          className="w-full sm:w-64 bg-slate-950 border border-slate-700 text-white pl-9 pr-4 py-2 rounded-md text-sm focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-600 transition-all focus:border-blue-500"
+                        />
+                      </div>
+                      <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium shadow-lg shadow-blue-900/20 transition-colors whitespace-nowrap">
+                          Export List
+                      </button>
+                  </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -254,42 +277,50 @@ const App: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {employees.map(emp => (
-                      <tr key={emp.id} className="hover:bg-slate-800/50 transition-colors group">
-                        <td className="px-6 py-4 align-middle">
-                          <div className="flex items-center gap-3">
-                            <img src={emp.avatarUrl} alt={emp.name} className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 group-hover:border-blue-500 transition-colors" />
-                            <div>
-                              <p className="text-sm font-medium text-white">{emp.name}</p>
-                              <p className="text-xs text-slate-500">{emp.email}</p>
+                    {filteredEmployees.length === 0 ? (
+                        <tr>
+                            <td colSpan={5} className="px-6 py-8 text-center text-slate-500 text-sm">
+                                No employees found matching "{employeeSearch}"
+                            </td>
+                        </tr>
+                    ) : (
+                        filteredEmployees.map(emp => (
+                        <tr key={emp.id} className="hover:bg-slate-800/50 transition-colors group">
+                            <td className="px-6 py-4 align-middle">
+                            <div className="flex items-center gap-3">
+                                <img src={emp.avatarUrl} alt={emp.name} className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 group-hover:border-blue-500 transition-colors" />
+                                <div>
+                                <p className="text-sm font-medium text-white">{emp.name}</p>
+                                <p className="text-xs text-slate-500">{emp.email}</p>
+                                </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 align-middle">
-                          <span className="px-2 py-1 text-[10px] font-bold bg-blue-900/20 text-blue-400 border border-blue-800/30 rounded uppercase">
-                            {emp.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-400 align-middle">
-                          {emp.assignedStoreIds.length} Stores
-                        </td>
-                        <td className="px-6 py-4 align-middle">
-                          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                            Active
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right align-middle">
-                            <button 
-                               onClick={() => handleDeleteEmployee(emp.id)}
-                               className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-950/20 rounded transition-all"
-                               title="Delete Employee"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </td>
-                      </tr>
-                    ))}
+                            </td>
+                            <td className="px-6 py-4 align-middle">
+                            <span className="px-2 py-1 text-[10px] font-bold bg-blue-900/20 text-blue-400 border border-blue-800/30 rounded uppercase">
+                                {emp.role}
+                            </span>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-slate-400 align-middle">
+                            {emp.assignedStoreIds.length} Stores
+                            </td>
+                            <td className="px-6 py-4 align-middle">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                                Active
+                            </span>
+                            </td>
+                            <td className="px-6 py-4 text-right align-middle">
+                                <button 
+                                onClick={() => handleDeleteEmployee(emp.id)}
+                                className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-950/20 rounded transition-all"
+                                title="Delete Employee"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </td>
+                        </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>

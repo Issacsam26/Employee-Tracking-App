@@ -26,8 +26,9 @@ export const MOCK_STORES: Store[] = [
     id: 'store-001',
     tenantId: 'tenant-alpha',
     name: 'Downtown Flagship',
-    ssids: ['ShopNet_Staff', 'ShopNet_Guest'],
-    bssids: ['aa:bb:cc:dd:ee:01', 'aa:bb:cc:dd:ee:02'],
+    // Added Intelense_5G first so auto-connect picks it up by default for testing
+    ssids: ['Intelense_5G', 'ShopNet_Staff', 'ShopNet_Guest'],
+    bssids: ['d8:b0:20:f4:14:3d', 'aa:bb:cc:dd:ee:01', 'aa:bb:cc:dd:ee:02'],
     rssiThreshold: -75,
     geofence: { lat: 40.7128, lng: -74.0060, radius: 50 },
     floorPlanAspectRatio: 1.5,

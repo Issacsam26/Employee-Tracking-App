@@ -269,7 +269,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
                 
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1.5 text-left uppercase tracking-wide">{isSignup ? 'Create Access PIN' : 'Enter Access PIN'}</label>
+                    <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-xs font-medium text-slate-400 text-left uppercase tracking-wide">{isSignup ? 'Create Access PIN' : 'Enter Access PIN'}</label>
+                        {!isSignup && (
+                            <button 
+                                type="button" 
+                                onClick={openForgotPassword}
+                                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                                Forgot PIN?
+                            </button>
+                        )}
+                    </div>
                     <div className="relative">
                     <input 
                         type="password"
@@ -340,7 +351,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         Restricted Access. Authorized Personnel Only.
       </p>
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password/PIN Modal */}
       {showForgotPassword && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-slate-900 w-full max-w-sm p-6 rounded-xl border border-slate-800 shadow-2xl relative animate-in zoom-in-95 duration-200">
@@ -355,9 +366,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <div className="w-12 h-12 bg-blue-900/20 rounded-full flex items-center justify-center mb-4 border border-blue-800/30">
                         <Lock className="w-6 h-6 text-blue-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Reset Password</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                        {mode === 'ADMIN' ? 'Reset Password' : 'Reset Access PIN'}
+                    </h3>
                     <p className="text-sm text-slate-400">
-                        Enter your administrator email address and we'll send you a link to reset your password.
+                        {mode === 'ADMIN' 
+                            ? "Enter your administrator email address and we'll send you a link to reset your password."
+                            : "Enter your registered employee email address and we'll send you a temporary PIN reset link."
+                        }
                     </p>
                 </div>
 
@@ -365,7 +381,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                      <div className="bg-emerald-900/20 border border-emerald-900/50 rounded-lg p-4 text-center">
                         <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
                         <p className="text-emerald-400 font-medium text-sm">Check your email!</p>
-                        <p className="text-xs text-slate-400 mt-1">We've sent a password reset link to <br/> <span className="text-white">{resetEmail}</span></p>
+                        <p className="text-xs text-slate-400 mt-1">We've sent a {mode === 'ADMIN' ? 'password' : 'PIN'} reset link to <br/> <span className="text-white">{resetEmail}</span></p>
                         <button 
                             onClick={() => setShowForgotPassword(false)}
                             className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded border border-slate-700 transition-colors"
@@ -400,7 +416,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         >
                             {resetStatus === 'sending' ? (
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : 'Send Reset Link'}
+                            ) : (
+                                mode === 'ADMIN' ? 'Send Reset Link' : 'Send PIN Reset'
+                            )}
                         </button>
                     </form>
                 )}

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Shift, Session, Store, Employee } from '../types';
-import { LogOut, MapPin, Clock, Wifi, Calendar, Plus, Play, Square, AlertTriangle, Signal } from 'lucide-react';
+import { LogOut, MapPin, Clock, Wifi, Calendar, Plus, Play, Square, AlertTriangle, Signal, CheckCircle2, X } from 'lucide-react';
 import { MOCK_SHIFTS } from '../services/mockData';
 
 interface EmployeePortalProps {
@@ -20,6 +20,7 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
   const [attendanceHistory, setAttendanceHistory] = useState<Session[]>([]);
   const [sessionDuration, setSessionDuration] = useState<string>('00:00');
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
 
   // Simulation State
   const [simulatedSSID, setSimulatedSSID] = useState<string>('');
@@ -68,10 +69,18 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
         const targetSSID = myStores.flatMap(s => s.ssids)[0];
         
         if (targetSSID) {
-            setSimulatedSSID(targetSSID);
+            // Add delay to simulate background scanning and connection
+            const timer = setTimeout(() => {
+                setSimulatedSSID(targetSSID);
+                setNotification(`Background service detected and connected to authorized store network: "${targetSSID}"`);
+                
+                // Auto-dismiss notification after 5 seconds
+                setTimeout(() => setNotification(null), 5000);
+            }, 1200);
+            return () => clearTimeout(timer);
         }
     }
-  }, [employee, stores]);
+  }, [employee, stores, simulatedSSID, currentSession]);
 
   const handleClockIn = () => {
       setError(null);
@@ -135,8 +144,37 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
 
   const getStoreName = (id?: string) => stores.find(s => s.id === id)?.name || 'Unknown Location';
   
+  // Helper to check if connected to authorized network
+  const isAuthorizedNetwork = () => {
+    if (!simulatedSSID || !employee) return false;
+    const assignedStoreIds = employee.assignedStoreIds || [];
+    const myStores = stores.filter(s => assignedStoreIds.includes(s.id));
+    return myStores.some(s => s.ssids.includes(simulatedSSID));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-6 relative">
+      {/* Toast Notification */}
+      {notification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 animate-in slide-in-from-top-4 duration-500">
+            <div className="bg-emerald-900/90 border border-emerald-500/50 backdrop-blur-md shadow-2xl rounded-lg p-4 flex items-start gap-3">
+                <div className="bg-emerald-500/20 p-1.5 rounded-full shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-white">Wi-Fi Verified</h4>
+                    <p className="text-xs text-emerald-100 mt-1">{notification}</p>
+                </div>
+                <button 
+                    onClick={() => setNotification(null)}
+                    className="text-emerald-300 hover:text-white transition-colors shrink-0"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto space-y-6">
         
         {/* Header */}
@@ -158,15 +196,24 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
             </button>
         </div>
 
-        {/* Network Simulator (For Demo/Testing Purposes) */}
-        <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Network Simulator */}
+        <div className={`p-4 rounded-lg border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-500 ${isAuthorizedNetwork() ? 'bg-slate-900 border-emerald-500/30 shadow-lg shadow-emerald-900/10' : 'bg-slate-900 border-slate-800'}`}>
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-800 rounded-full text-slate-400">
+                <div className={`p-2 rounded-full transition-colors duration-300 ${isAuthorizedNetwork() ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
                     <Signal className="w-4 h-4" />
                 </div>
                 <div>
-                    <p className="text-xs font-bold text-slate-300 uppercase">Network Simulator</p>
-                    <p className="text-[10px] text-slate-500">Simulate device Wi-Fi connection</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-slate-300 uppercase">Network Status</p>
+                        {isAuthorizedNetwork() && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 animate-in fade-in zoom-in">
+                                <Wifi className="w-3 h-3" /> Authorized
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                        {simulatedSSID ? `Connected to: ${simulatedSSID}` : 'Scanning for authorized networks...'}
+                    </p>
                 </div>
             </div>
             <select 
@@ -175,7 +222,7 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
                 disabled={!!currentSession}
                 className="bg-slate-950 border border-slate-700 text-white text-xs rounded px-3 py-2 outline-none focus:border-blue-500 min-w-[200px]"
             >
-                <option value="">-- Not Connected --</option>
+                <option value="">-- Disconnected --</option>
                 <option value="Starbucks_Free_WiFi">Starbucks_Free_WiFi</option>
                 <option value="Home_Network_5G">Home_Network_5G</option>
                 <optgroup label="Authorized Store Networks">
@@ -249,13 +296,14 @@ const EmployeePortal: React.FC<EmployeePortalProps> = ({ user, stores, employee,
                          <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/50">
                             <p className="text-xs text-slate-500 mb-1">Detected SSID</p>
                             <div className="flex items-center gap-2 text-slate-300">
-                                <Wifi className="w-4 h-4" />
-                                <span className="text-sm">{simulatedSSID || 'Not Connected'}</span>
+                                <Wifi className={`w-4 h-4 ${isAuthorizedNetwork() ? 'text-emerald-500' : 'text-slate-500'}`} />
+                                <span className="text-sm font-medium">{simulatedSSID || 'Not Connected'}</span>
                             </div>
                         </div>
                         <button 
                             onClick={handleClockIn}
-                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/20 transition-colors flex items-center justify-center gap-2"
+                            className={`w-full font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${isAuthorizedNetwork() ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
+                            disabled={!isAuthorizedNetwork()}
                         >
                             <Play className="w-4 h-4 fill-current" />
                             Clock In
