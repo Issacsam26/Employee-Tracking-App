@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store, Employee, PresenceEvent, Session, Role, EventType, UserProfile } from './types';
 import { MOCK_STORES, MOCK_EMPLOYEES, generateMockEvents, MOCK_SESSIONS, MOCK_ADMIN, MOCK_EMPLOYEE_USER } from './services/mockData';
-import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2, Search } from 'lucide-react';
+import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2, Search, Plus, Check, Upload } from 'lucide-react';
 
 // Views
 import Dashboard from './views/Dashboard';
@@ -30,6 +30,14 @@ const App: React.FC = () => {
 
   // UI State
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({
+      name: '',
+      email: '',
+      role: Role.STORE_MANAGER,
+      avatarUrl: '',
+      assignedStoreIds: [] as string[]
+  });
 
   // Simulate live data fetching
   useEffect(() => {
@@ -89,6 +97,41 @@ const App: React.FC = () => {
       if(window.confirm("Are you sure you want to remove this employee? This action cannot be undone.")) {
           setEmployees(employees.filter(e => e.id !== id));
       }
+  };
+
+  const toggleStoreAssignment = (storeId: string) => {
+      setNewEmployee(prev => {
+          const current = prev.assignedStoreIds;
+          if (current.includes(storeId)) {
+              return { ...prev, assignedStoreIds: current.filter(id => id !== storeId) };
+          } else {
+              return { ...prev, assignedStoreIds: [...current, storeId] };
+          }
+      });
+  };
+
+  const handleCreateEmployee = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newEmployee.name || !newEmployee.email) return;
+
+      const emp: Employee = {
+          id: `emp-${Date.now()}`,
+          name: newEmployee.name,
+          email: newEmployee.email,
+          role: newEmployee.role,
+          assignedStoreIds: newEmployee.assignedStoreIds,
+          avatarUrl: newEmployee.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.name.replace(/\s/g, '')}`
+      };
+
+      setEmployees([...employees, emp]);
+      setIsAddEmployeeOpen(false);
+      setNewEmployee({
+          name: '',
+          email: '',
+          role: Role.STORE_MANAGER,
+          avatarUrl: '',
+          assignedStoreIds: []
+      });
   };
 
   const filteredEmployees = employees.filter(emp => 
@@ -241,6 +284,130 @@ const App: React.FC = () => {
           )}
 
           {currentView === 'EMPLOYEES' && (
+            <>
+            {/* Add Employee Modal */}
+            {isAddEmployeeOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 w-full max-w-lg rounded-xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+                        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Users className="w-5 h-5 text-blue-500" />
+                                Add New Employee
+                            </h3>
+                            <button onClick={() => setIsAddEmployeeOpen(false)} className="text-slate-500 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateEmployee} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Full Name</label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                        placeholder="e.g. Jane Doe"
+                                        value={newEmployee.name}
+                                        onChange={e => setNewEmployee({...newEmployee, name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Role</label>
+                                    <select 
+                                        className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                        value={newEmployee.role}
+                                        onChange={e => setNewEmployee({...newEmployee, role: e.target.value as Role})}
+                                    >
+                                        {Object.values(Role).map(role => (
+                                            <option key={role} value={role}>{role}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Email Address</label>
+                                <input 
+                                    type="email" 
+                                    required
+                                    className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                    placeholder="jane.doe@company.com"
+                                    value={newEmployee.email}
+                                    onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Profile Picture URL</label>
+                                <div className="flex gap-3">
+                                    <div className="flex-1">
+                                        <input 
+                                            type="url" 
+                                            className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-600"
+                                            placeholder="https://..."
+                                            value={newEmployee.avatarUrl}
+                                            onChange={e => setNewEmployee({...newEmployee, avatarUrl: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="w-10 h-10 rounded bg-slate-800 border border-slate-700 overflow-hidden flex-shrink-0">
+                                        {newEmployee.avatarUrl || newEmployee.name ? (
+                                            <img 
+                                                src={newEmployee.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.name}`} 
+                                                alt="Preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-slate-600">
+                                                <User className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-1">Leave empty to generate a random avatar.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-2 uppercase">Assign Stores</label>
+                                <div className="bg-slate-950 border border-slate-700 rounded-md p-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                    {stores.length === 0 && <p className="text-xs text-slate-500 p-2">No stores available.</p>}
+                                    {stores.map(store => (
+                                        <label key={store.id} className="flex items-center gap-3 p-2 hover:bg-slate-900 rounded cursor-pointer">
+                                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${newEmployee.assignedStoreIds.includes(store.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-600'}`}>
+                                                {newEmployee.assignedStoreIds.includes(store.id) && <Check className="w-3 h-3 text-white" />}
+                                            </div>
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden"
+                                                checked={newEmployee.assignedStoreIds.includes(store.id)}
+                                                onChange={() => toggleStoreAssignment(store.id)}
+                                            />
+                                            <span className="text-sm text-slate-300">{store.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsAddEmployeeOpen(false)}
+                                    className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-md text-sm transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit"
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-md shadow-lg shadow-blue-900/20 transition-all font-medium text-sm flex items-center gap-2"
+                                >
+                                    <Users className="w-4 h-4" />
+                                    Create Employee
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-slate-900 rounded-lg shadow-sm border border-slate-800 overflow-hidden animate-in fade-in duration-300 flex flex-col">
               <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900">
                   <div className="text-left">
@@ -260,8 +427,12 @@ const App: React.FC = () => {
                           className="w-full sm:w-64 bg-slate-950 border border-slate-700 text-white pl-9 pr-4 py-2 rounded-md text-sm focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-600 transition-all focus:border-blue-500"
                         />
                       </div>
-                      <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium shadow-lg shadow-blue-900/20 transition-colors whitespace-nowrap">
-                          Export List
+                      <button 
+                        onClick={() => setIsAddEmployeeOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium shadow-lg shadow-blue-900/20 transition-colors whitespace-nowrap flex items-center gap-2"
+                      >
+                          <Plus className="w-4 h-4" />
+                          Add Employee
                       </button>
                   </div>
               </div>
@@ -325,6 +496,7 @@ const App: React.FC = () => {
                 </table>
               </div>
             </div>
+            </>
           )}
 
           {currentView === 'SETTINGS' && (

@@ -3,7 +3,7 @@ import { Employee, EventType, PresenceEvent, Role, Session, Store, UserProfile, 
 
 export const MOCK_ADMIN: UserProfile = {
   id: 'admin-001',
-  name: 'Sarah Connor',
+  name: 'Issac Samuel Paul',
   email: 'admin@techcorp.com',
   role: 'Super Administrator',
   avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
@@ -13,8 +13,8 @@ export const MOCK_ADMIN: UserProfile = {
 
 export const MOCK_EMPLOYEE_USER: UserProfile = {
     id: 'emp-101',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
+    name: 'Gouthami',
+    email: 'gouthami@example.com',
     role: 'Store Manager',
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
     tenantId: 'tenant-alpha',
@@ -59,24 +59,24 @@ export const MOCK_STORES: Store[] = [
 export const MOCK_EMPLOYEES: Employee[] = [
   {
     id: 'emp-101',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
+    name: 'Gouthami',
+    email: 'gouthami@example.com',
     role: Role.STORE_MANAGER,
     assignedStoreIds: ['store-001'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice'
   },
   {
     id: 'emp-102',
-    name: 'Bob Smith',
-    email: 'bob@example.com',
+    name: 'Spandana',
+    email: 'quack@example.com',
     role: Role.AUDITOR,
     assignedStoreIds: ['store-001', 'store-002', 'store-003'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'
   },
   {
     id: 'emp-103',
-    name: 'Charlie Davis',
-    email: 'charlie@example.com',
+    name: 'Syed',
+    email: 'syed@example.com',
     role: Role.STORE_MANAGER,
     assignedStoreIds: ['store-002'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie'
