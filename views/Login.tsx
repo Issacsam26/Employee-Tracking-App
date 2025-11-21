@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, ArrowRight, Lock, User, Briefcase, Building, AlertCircle, Hash, X, Mail, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Lock, User, Briefcase, Building, AlertCircle, Hash, X, Mail, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { MOCK_EMPLOYEES } from '../services/mockData';
 
 interface LoginProps {
   onLogin: (role: 'ADMIN' | 'EMPLOYEE') => void;
@@ -26,10 +27,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Password Reset State
+  // Password/PIN Reset State
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
+  // Admin Reset State (Email based)
   const [resetEmail, setResetEmail] = useState('');
   const [resetStatus, setResetStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+
+  // Employee Reset State (ID/Name based -> New PIN)
+  const [forgotPinStep, setForgotPinStep] = useState<'VERIFY' | 'RESET' | 'SUCCESS'>('VERIFY');
+  const [resetName, setResetName] = useState('');
+  const [resetEmpId, setResetEmpId] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmNewPin, setConfirmNewPin] = useState('');
+  const [resetError, setResetError] = useState('');
 
   const handlePinChange = (value: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
     // Only allow numbers and max 6 digits
@@ -78,7 +89,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }, 1000);
   };
 
-  const handleResetSubmit = (e: React.FormEvent) => {
+  const handleAdminResetSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       setResetStatus('sending');
       
@@ -92,6 +103,45 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }, 1500);
   };
 
+  const handleEmployeeVerify = (e: React.FormEvent) => {
+      e.preventDefault();
+      setResetError('');
+      
+      // Simulate verifying against database
+      setTimeout(() => {
+          const found = MOCK_EMPLOYEES.find(e => 
+              e.id.toLowerCase() === resetEmpId.toLowerCase() && 
+              e.name.toLowerCase() === resetName.toLowerCase()
+          );
+
+          if (found) {
+              setForgotPinStep('RESET');
+          } else {
+              setResetError('Employee Name and ID do not match our records.');
+          }
+      }, 800);
+  };
+
+  const handleEmployeeSetPin = (e: React.FormEvent) => {
+      e.preventDefault();
+      setResetError('');
+
+      if (newPin.length < 4) {
+          setResetError('PIN must be at least 4 digits.');
+          return;
+      }
+      if (newPin !== confirmNewPin) {
+          setResetError('PINs do not match.');
+          return;
+      }
+
+      // Simulate API Update
+      setTimeout(() => {
+          setForgotPinStep('SUCCESS');
+          // In a real app, you would update the backend here
+      }, 800);
+  };
+
   const toggleSignup = () => {
       setIsSignup(!isSignup);
       setError('');
@@ -101,8 +151,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   const openForgotPassword = () => {
-      setResetEmail(email); // Pre-fill with current email input
+      // Reset all states
+      setResetEmail(email); 
       setResetStatus('idle');
+      
+      setResetName('');
+      setResetEmpId('');
+      setNewPin('');
+      setConfirmNewPin('');
+      setForgotPinStep('VERIFY');
+      setResetError('');
+
       setShowForgotPassword(true);
   };
 
@@ -372,55 +431,188 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <p className="text-sm text-slate-400">
                         {mode === 'ADMIN' 
                             ? "Enter your administrator email address and we'll send you a link to reset your password."
-                            : "Enter your registered employee email address and we'll send you a temporary PIN reset link."
+                            : forgotPinStep === 'VERIFY' 
+                                ? "Verify your identity to reset your PIN."
+                                : forgotPinStep === 'RESET' 
+                                    ? "Enter your new access PIN."
+                                    : "PIN updated successfully!"
                         }
                     </p>
                 </div>
 
-                {resetStatus === 'success' ? (
-                     <div className="bg-emerald-900/20 border border-emerald-900/50 rounded-lg p-4 text-center">
-                        <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                        <p className="text-emerald-400 font-medium text-sm">Check your email!</p>
-                        <p className="text-xs text-slate-400 mt-1">We've sent a {mode === 'ADMIN' ? 'password' : 'PIN'} reset link to <br/> <span className="text-white">{resetEmail}</span></p>
-                        <button 
-                            onClick={() => setShowForgotPassword(false)}
-                            className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded border border-slate-700 transition-colors"
-                        >
-                            Back to Login
-                        </button>
-                    </div>
-                ) : (
-                    <form onSubmit={handleResetSubmit}>
-                        <div className="mb-4">
-                            <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Email Address</label>
-                            <div className="relative">
-                                <input 
-                                    type="email" 
-                                    required
-                                    value={resetEmail}
-                                    onChange={(e) => {
-                                        setResetEmail(e.target.value);
-                                        if(resetStatus === 'error') setResetStatus('idle');
-                                    }}
-                                    className={`w-full bg-slate-950 border ${resetStatus === 'error' ? 'border-rose-500' : 'border-slate-700'} text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-600 text-sm`}
-                                    placeholder="admin@company.com"
-                                />
-                                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
-                            </div>
-                            {resetStatus === 'error' && <p className="text-xs text-rose-400 mt-1.5">Please enter a valid email address.</p>}
+                {/* ADMIN FLOW - EMAIL BASED */}
+                {mode === 'ADMIN' && (
+                     resetStatus === 'success' ? (
+                        <div className="bg-emerald-900/20 border border-emerald-900/50 rounded-lg p-4 text-center">
+                            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                            <p className="text-emerald-400 font-medium text-sm">Check your email!</p>
+                            <p className="text-xs text-slate-400 mt-1">We've sent a password reset link to <br/> <span className="text-white">{resetEmail}</span></p>
+                            <button 
+                                onClick={() => setShowForgotPassword(false)}
+                                className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium py-2 rounded border border-slate-700 transition-colors"
+                            >
+                                Back to Login
+                            </button>
                         </div>
-                        <button 
-                            type="submit"
-                            disabled={resetStatus === 'sending'}
-                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 disabled:opacity-70"
-                        >
-                            {resetStatus === 'sending' ? (
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                mode === 'ADMIN' ? 'Send Reset Link' : 'Send PIN Reset'
-                            )}
-                        </button>
-                    </form>
+                    ) : (
+                        <form onSubmit={handleAdminResetSubmit}>
+                            <div className="mb-4">
+                                <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Email Address</label>
+                                <div className="relative">
+                                    <input 
+                                        type="email" 
+                                        required
+                                        value={resetEmail}
+                                        onChange={(e) => {
+                                            setResetEmail(e.target.value);
+                                            if(resetStatus === 'error') setResetStatus('idle');
+                                        }}
+                                        className={`w-full bg-slate-950 border ${resetStatus === 'error' ? 'border-rose-500' : 'border-slate-700'} text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-slate-600 text-sm`}
+                                        placeholder="admin@company.com"
+                                    />
+                                    <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                                </div>
+                                {resetStatus === 'error' && <p className="text-xs text-rose-400 mt-1.5">Please enter a valid email address.</p>}
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={resetStatus === 'sending'}
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 disabled:opacity-70"
+                            >
+                                {resetStatus === 'sending' ? (
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    'Send Reset Link'
+                                )}
+                            </button>
+                        </form>
+                    )
+                )}
+
+                {/* EMPLOYEE FLOW - IDENTITY BASED */}
+                {mode === 'EMPLOYEE' && (
+                    <>
+                        {forgotPinStep === 'VERIFY' && (
+                             <form onSubmit={handleEmployeeVerify}>
+                                {resetError && (
+                                    <div className="mb-4 p-2 bg-rose-950/30 border border-rose-900/50 rounded flex items-center gap-2 text-rose-300 text-xs">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {resetError}
+                                    </div>
+                                )}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Full Name</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="text" 
+                                                required
+                                                value={resetName}
+                                                onChange={(e) => setResetName(e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                                placeholder="Enter your full name"
+                                            />
+                                            <User className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Employee ID</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="text" 
+                                                required
+                                                value={resetEmpId}
+                                                onChange={(e) => setResetEmpId(e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono uppercase"
+                                                placeholder="EMP-XXXX"
+                                            />
+                                            <Briefcase className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        type="submit"
+                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-900/30"
+                                    >
+                                        Verify Identity
+                                    </button>
+                                </div>
+                             </form>
+                        )}
+
+                        {forgotPinStep === 'RESET' && (
+                             <form onSubmit={handleEmployeeSetPin}>
+                                {resetError && (
+                                    <div className="mb-4 p-2 bg-rose-950/30 border border-rose-900/50 rounded flex items-center gap-2 text-rose-300 text-xs">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {resetError}
+                                    </div>
+                                )}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">New PIN</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="password"
+                                                inputMode="numeric" 
+                                                required
+                                                value={newPin}
+                                                onChange={(e) => handlePinChange(e.target.value, setNewPin)}
+                                                className="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono tracking-[0.5em]"
+                                                placeholder="••••"
+                                                maxLength={6}
+                                            />
+                                            <Hash className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Confirm PIN</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="password"
+                                                inputMode="numeric" 
+                                                required
+                                                value={confirmNewPin}
+                                                onChange={(e) => handlePinChange(e.target.value, setConfirmNewPin)}
+                                                className="w-full bg-slate-950 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono tracking-[0.5em]"
+                                                placeholder="••••"
+                                                maxLength={6}
+                                            />
+                                            <Hash className="absolute left-3 top-3 w-5 h-5 text-slate-600" />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                         <button 
+                                            type="button"
+                                            onClick={() => setForgotPinStep('VERIFY')}
+                                            className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-all border border-slate-700"
+                                        >
+                                            Back
+                                        </button>
+                                        <button 
+                                            type="submit"
+                                            className="flex-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-blue-900/30"
+                                        >
+                                            Set New PIN
+                                        </button>
+                                    </div>
+                                </div>
+                             </form>
+                        )}
+
+                        {forgotPinStep === 'SUCCESS' && (
+                             <div className="bg-emerald-900/20 border border-emerald-900/50 rounded-lg p-4 text-center animate-in zoom-in">
+                                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                                <p className="text-emerald-400 font-medium text-sm">PIN Reset Successful!</p>
+                                <p className="text-xs text-slate-400 mt-1">Your access PIN has been updated. You can now log in with your new credentials.</p>
+                                <button 
+                                    onClick={() => setShowForgotPassword(false)}
+                                    className="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded transition-colors shadow-lg shadow-emerald-900/20"
+                                >
+                                    Proceed to Login
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
