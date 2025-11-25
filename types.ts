@@ -41,7 +41,7 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  role: string; // Changed from Role enum to string to allow custom roles
   assignedStoreIds: string[];
   avatarUrl: string;
 }

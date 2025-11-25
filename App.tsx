@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Store, Employee, PresenceEvent, Session, Role, EventType, UserProfile } from './types';
+import { Store, Employee, PresenceEvent, Session, EventType, UserProfile } from './types';
 import { MOCK_STORES, MOCK_EMPLOYEES, generateMockEvents, MOCK_SESSIONS, MOCK_ADMIN, MOCK_EMPLOYEE_USER } from './services/mockData';
-import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2, Search, Plus, Check, Upload } from 'lucide-react';
+import { LayoutDashboard, Store as StoreIcon, Users, Settings, LogOut, Menu, X, ShieldCheck, User, Trash2, Search, Plus, Check, Upload, PenTool } from 'lucide-react';
 
 // Views
 import Dashboard from './views/Dashboard';
@@ -12,6 +12,20 @@ import Profile from './views/Profile';
 import EmployeePortal from './views/EmployeePortal';
 
 type View = 'DASHBOARD' | 'STORES' | 'EMPLOYEES' | 'SETTINGS' | 'PROFILE';
+
+const COMMON_ROLES = [
+  "Store Manager",
+  "Assistant Manager",
+  "Sales Associate",
+  "Cashier",
+  "Stock Clerk",
+  "Security Officer",
+  "Visual Merchandiser",
+  "Auditor",
+  "Cleaner",
+  "Technician",
+  "Customer Service Rep"
+];
 
 const App: React.FC = () => {
   // Auth State
@@ -31,13 +45,16 @@ const App: React.FC = () => {
   // UI State
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+  
+  // Add Employee Form State
   const [newEmployee, setNewEmployee] = useState({
       name: '',
       email: '',
-      role: Role.STORE_MANAGER,
+      role: 'Sales Associate',
       avatarUrl: '',
       assignedStoreIds: [] as string[]
   });
+  const [isCustomRoleMode, setIsCustomRoleMode] = useState(false);
 
   // Simulate live data fetching
   useEffect(() => {
@@ -112,7 +129,7 @@ const App: React.FC = () => {
 
   const handleCreateEmployee = (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newEmployee.name || !newEmployee.email) return;
+      if (!newEmployee.name || !newEmployee.email || !newEmployee.role) return;
 
       const emp: Employee = {
           id: `emp-${Date.now()}`,
@@ -128,10 +145,11 @@ const App: React.FC = () => {
       setNewEmployee({
           name: '',
           email: '',
-          role: Role.STORE_MANAGER,
+          role: 'Sales Associate',
           avatarUrl: '',
           assignedStoreIds: []
       });
+      setIsCustomRoleMode(false);
   };
 
   const filteredEmployees = employees.filter(emp => 
@@ -313,15 +331,44 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase">Role</label>
-                                    <select 
-                                        className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                                        value={newEmployee.role}
-                                        onChange={e => setNewEmployee({...newEmployee, role: e.target.value as Role})}
-                                    >
-                                        {Object.values(Role).map(role => (
-                                            <option key={role} value={role}>{role}</option>
-                                        ))}
-                                    </select>
+                                    {isCustomRoleMode ? (
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                required
+                                                className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none pr-8"
+                                                placeholder="Enter Custom Role"
+                                                value={newEmployee.role}
+                                                onChange={e => setNewEmployee({...newEmployee, role: e.target.value})}
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => { setIsCustomRoleMode(false); setNewEmployee({...newEmployee, role: COMMON_ROLES[0]}); }}
+                                                className="absolute right-2 top-2.5 text-slate-500 hover:text-white"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <select 
+                                            className="w-full bg-slate-950 border border-slate-700 text-white rounded-md p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                            value={newEmployee.role}
+                                            onChange={(e) => {
+                                                if (e.target.value === 'CUSTOM') {
+                                                    setIsCustomRoleMode(true);
+                                                    setNewEmployee({...newEmployee, role: ''});
+                                                } else {
+                                                    setNewEmployee({...newEmployee, role: e.target.value});
+                                                }
+                                            }}
+                                        >
+                                            {COMMON_ROLES.map(role => (
+                                                <option key={role} value={role}>{role}</option>
+                                            ))}
+                                            <option value="CUSTOM" className="text-blue-400 font-bold">+ Add Custom Role...</option>
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             

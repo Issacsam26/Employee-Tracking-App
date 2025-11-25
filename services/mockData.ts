@@ -61,7 +61,7 @@ export const MOCK_EMPLOYEES: Employee[] = [
     id: 'emp-101',
     name: 'Gouthami',
     email: 'gouthami@example.com',
-    role: Role.STORE_MANAGER,
+    role: 'Store Manager',
     assignedStoreIds: ['store-001'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice'
   },
@@ -69,7 +69,7 @@ export const MOCK_EMPLOYEES: Employee[] = [
     id: 'emp-102',
     name: 'Spandana',
     email: 'quack@example.com',
-    role: Role.AUDITOR,
+    role: 'Auditor',
     assignedStoreIds: ['store-001', 'store-002', 'store-003'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'
   },
@@ -77,7 +77,7 @@ export const MOCK_EMPLOYEES: Employee[] = [
     id: 'emp-103',
     name: 'Syed',
     email: 'syed@example.com',
-    role: Role.STORE_MANAGER,
+    role: 'Assistant Manager',
     assignedStoreIds: ['store-002'],
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie'
   }
